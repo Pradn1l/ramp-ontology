@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+    xml:base="https://w3id.org/ramp"
+    xmlns:ramp="https://w3id.org/ramp#">
+
+  <owl:Ontology rdf:about="https://w3id.org/ramp">
+    <dcterms:title>RAMP: Robotic Additive Manufacturing Planned-toolpath ontology</dcterms:title>
+    <dcterms:description>A minimal OWL ontology for representing planned 6-DOF robotic AM toolpaths as semantically enriched objects. It covers the plan spine (program, motion commands, poses, blending and dynamics parameters), a semantic overlay (regions, kinematic profiles, risk flags, remedies stated as capability classes), printing context (robot, controller, tool, substrate, hybrid context), and a validation group (execution records and measured deviation observations). The ontology organizes, queries, and makes portable the physics of trajectory fidelity. It does not compute kinematics. Every quantitative assertion is expected to carry a provenance link distinguishing digital-twin-simulated from RSI-measured origin.</dcterms:description>
+    <dcterms:creator>Pradnil Kamble</dcterms:creator>
+    <dcterms:license rdf:resource="https://creativecommons.org/licenses/by/4.0/"/>
+    <owl:versionInfo>0.1.0</owl:versionInfo>
+    <rdfs:seeAlso rdf:resource="http://www.w3.org/ns/sosa/"/>
+    <skos:note>Alignment stance: reuse by reference, not by import. DeviationObservation is observation-like in the SOSA sense. Robot is intended to be compatible with the CORA notion of robot in IEEE 1872-2015. QUDT unit IRIs may be attached to datatype properties in future versions. Units in this version are fixed by property naming (mm, deg, Hz, percent).</skos:note>
+  </owl:Ontology>
+
+  <!-- ================================================================
+       PLAN SPINE
+       ================================================================ -->
+
+  <owl:Class rdf:about="#ToolpathProgram">
+    <rdfs:label>Toolpath program</rdfs:label>
+    <rdfs:comment>A planned deposition program, typically one KRL source file, composed of ordered motion commands and linked to its printing context.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#MotionCommand">
+    <rdfs:label>Motion command</rdfs:label>
+    <rdfs:comment>A controller-level motion primitive with a target pose, a commanded speed, and optional blending and dynamics specifications.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#LinearMotion">
+    <rdfs:subClassOf rdf:resource="#MotionCommand"/>
+    <rdfs:label>Linear motion</rdfs:label>
+    <rdfs:comment>Cartesian linear motion. In KRL, a LIN block.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#SplineLinearMotion">
+    <rdfs:subClassOf rdf:resource="#MotionCommand"/>
+    <rdfs:label>Spline linear motion</rdfs:label>
+    <rdfs:comment>Cartesian linear segment inside a spline context. In KRL, an SLIN block. Jerk limits are settable for spline motion.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#JointMotion">
+    <rdfs:subClassOf rdf:resource="#MotionCommand"/>
+    <rdfs:label>Joint motion</rdfs:label>
+    <rdfs:comment>Joint-interpolated motion. In KRL, a PTP block. Used for approach and retract, not for deposition.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#Pose">
+    <rdfs:label>Pose</rdfs:label>
+    <rdfs:comment>An SE(3) target pose given by position in mm and KUKA A/B/C Euler angles in degrees, in a stated base frame.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#BlendingSpecification">
+    <rdfs:label>Blending specification</rdfs:label>
+    <rdfs:comment>Approximate-positioning parameters governing the designed a-to-b gap, such as KRL $APO.CDIS, $APO.CVEL, and $APO.CORI. Stored as machine values on the plan spine. The capability-level counterpart lives in Remedy.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#DynamicsSpecification">
+    <rdfs:label>Dynamics specification</rdfs:label>
+    <rdfs:comment>Programmed path acceleration and jerk limits and the advance-run (look-ahead) depth active for a command or program.</rdfs:comment>
+  </owl:Class>
+
+  <!-- ================================================================
+       SEMANTIC OVERLAY
+       ================================================================ -->
+
+  <owl:Class rdf:about="#Region">
+    <rdfs:label>Region</rdfs:label>
+    <rdfs:comment>A contiguous arc-length interval of the planned path carrying a semantic tag. Region subclasses are intentionally not disjoint. A sharp reorientation may also be near-singular, and the overlap is informative.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#CornerRegion">
+    <rdfs:subClassOf rdf:resource="#Region"/>
+    <rdfs:label>Corner region</rdfs:label>
+    <rdfs:comment>A junction where the translational direction changes sharply with low orientation change. The known, controller-handled case.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#SharpReorientationRegion">
+    <rdfs:subClassOf rdf:resource="#Region"/>
+    <rdfs:label>Sharp reorientation region</rdfs:label>
+    <rdfs:comment>An interval with large angular change over small translation, that is, high angular twist rate. The AM-specific deviation source emphasized by this ontology.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#NearSingularityRegion">
+    <rdfs:subClassOf rdf:resource="#Region"/>
+    <rdfs:label>Near-singularity region</rdfs:label>
+    <rdfs:comment>An interval where the digital twin reports proximity to a kinematic singularity, for example a small wrist angle or a high Jacobian condition number.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#VelocityLimitedRegion">
+    <rdfs:subClassOf rdf:resource="#Region"/>
+    <rdfs:label>Velocity-limited region</rdfs:label>
+    <rdfs:comment>An interval where executing the plan at the commanded TCP speed demands joint rates near their limits, that is, a low minimum joint velocity reserve.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#SubNozzleFeatureRegion">
+    <rdfs:subClassOf rdf:resource="#Region"/>
+    <rdfs:label>Sub-nozzle feature region</rdfs:label>
+    <rdfs:comment>An interval whose planned local contour radius falls below the minimum feasible radius for the mounted nozzle. Unachievable regardless of controller settings.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#BlendZone">
+    <rdfs:subClassOf rdf:resource="#Region"/>
+    <rdfs:label>Blend zone</rdfs:label>
+    <rdfs:comment>The designed approximation interval implied by a command's approximate-positioning switch and the active APO values. Deviation inside this zone up to the commanded tolerance is designed, not infidelity.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#KinematicProfile">
+    <rdfs:label>Kinematic profile</rdfs:label>
+    <rdfs:comment>Aggregated digital-twin kinematic descriptors over a region: Jacobian conditioning, manipulability, wrist manipulability, and joint velocity reserves. Always DT-provenanced.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#RiskFlag">
+    <rdfs:label>Risk flag</rdfs:label>
+    <rdfs:comment>An a priori flag attached to a region, naming a risk type and suggesting one or more remedies stated as capability classes.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#RiskType">
+    <rdfs:label>Risk type</rdfs:label>
+    <rdfs:comment>The controlled vocabulary of design-stage risks. Instantiated by named individuals.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#Remedy">
+    <rdfs:label>Remedy</rdfs:label>
+    <rdfs:comment>A machine-independent capability class describing how a risk can be mitigated. Bindings to concrete controller parameters are resolved per deployment and are not part of this ontology.</rdfs:comment>
+  </owl:Class>
+
+  <!-- ================================================================
+       CONTEXT GROUP
+       ================================================================ -->
+
+  <owl:Class rdf:about="#Robot">
+    <rdfs:label>Robot</rdfs:label>
+    <rdfs:comment>A serial manipulator executing the program. Intended to be compatible with the CORA notion of robot (IEEE 1872-2015).</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#Controller">
+    <rdfs:label>Controller</rdfs:label>
+    <rdfs:comment>The motion controller synthesizing the reference trajectory (element b of the decomposition). Its interpolator is treated as opaque.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#Tool">
+    <rdfs:label>Tool</rdfs:label>
+    <rdfs:comment>The deposition end effector, characterized here by its nozzle diameter and the derived minimum feasible contour radius.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#Substrate">
+    <rdfs:label>Substrate</rdfs:label>
+    <rdfs:comment>The existing part or plate printed onto in hybrid workflows.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#HybridPrintingContext">
+    <rdfs:label>Hybrid printing context</rdfs:label>
+    <rdfs:comment>The hybrid-printing situation of a program, linking substrate and reorientation strategy.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#ReorientationStrategy">
+    <rdfs:label>Reorientation strategy</rdfs:label>
+    <rdfs:comment>How the planner distributes tool reorientation, for example continuous tilt versus discrete reorientation moves. Instantiated by named individuals.</rdfs:comment>
+  </owl:Class>
+
+  <!-- ================================================================
+       VALIDATION GROUP
+       ================================================================ -->
+
+  <owl:Class rdf:about="#ExecutionRecord">
+    <rdfs:label>Execution record</rdfs:label>
+    <rdfs:comment>One physical run of a program, storing the controller knob vector in force (APO distance, path acceleration, path jerk, advance-run depth) and linking to measured observations.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="#DeviationObservation">
+    <rdfs:label>Deviation observation</rdfs:label>
+    <rdfs:comment>Per-region aggregates of measured deviation metrics from RSI telemetry: lateral deviation RMS and max, orientation deviation max, speed dip, exit ringing. Always RSI-provenanced. Observation-like in the SOSA sense.</rdfs:comment>
+    <rdfs:seeAlso rdf:resource="http://www.w3.org/ns/sosa/Observation"/>
+  </owl:Class>
+
+  <owl:Class rdf:about="#Provenance">
+    <rdfs:label>Provenance</rdfs:label>
+    <rdfs:comment>The origin of a quantitative assertion. Two individuals are provided: DigitalTwinSimulated and RsiMeasured. The two must never be mixed within one metric.</rdfs:comment>
+  </owl:Class>
+
+  <!-- ================================================================
+       OBJECT PROPERTIES
+       ================================================================ -->
+
+  <owl:ObjectProperty rdf:about="#hasCommand">
+    <rdfs:label>has command</rdfs:label>
+    <rdfs:domain rdf:resource="#ToolpathProgram"/>
+    <rdfs:range rdf:resource="#MotionCommand"/>
+    <rdfs:comment>Links a program to a motion command it contains. Ordering is carried by blockIndex.</rdfs:comment>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#nextCommand">
+    <rdfs:label>next command</rdfs:label>
+    <rdfs:domain rdf:resource="#MotionCommand"/>
+    <rdfs:range rdf:resource="#MotionCommand"/>
+    <rdfs:comment>Successor relation between consecutive commands of one program.</rdfs:comment>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasTargetPose">
+    <rdfs:label>has target pose</rdfs:label>
+    <rdfs:domain rdf:resource="#MotionCommand"/>
+    <rdfs:range rdf:resource="#Pose"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasBlending">
+    <rdfs:label>has blending</rdfs:label>
+    <rdfs:domain rdf:resource="#MotionCommand"/>
+    <rdfs:range rdf:resource="#BlendingSpecification"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasDynamics">
+    <rdfs:label>has dynamics</rdfs:label>
+    <rdfs:range rdf:resource="#DynamicsSpecification"/>
+    <rdfs:comment>Links a program or a command to the dynamics specification in force. Domain left open on purpose.</rdfs:comment>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasRegion">
+    <rdfs:label>has region</rdfs:label>
+    <rdfs:domain rdf:resource="#ToolpathProgram"/>
+    <rdfs:range rdf:resource="#Region"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#spansCommand">
+    <rdfs:label>spans command</rdfs:label>
+    <rdfs:domain rdf:resource="#Region"/>
+    <rdfs:range rdf:resource="#MotionCommand"/>
+    <rdfs:comment>Links a region to each motion command it overlaps in arc length.</rdfs:comment>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasKinematicProfile">
+    <rdfs:label>has kinematic profile</rdfs:label>
+    <rdfs:domain rdf:resource="#Region"/>
+    <rdfs:range rdf:resource="#KinematicProfile"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasRiskFlag">
+    <rdfs:label>has risk flag</rdfs:label>
+    <rdfs:domain rdf:resource="#Region"/>
+    <rdfs:range rdf:resource="#RiskFlag"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasRiskType">
+    <rdfs:label>has risk type</rdfs:label>
+    <rdfs:domain rdf:resource="#RiskFlag"/>
+    <rdfs:range rdf:resource="#RiskType"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#suggestsRemedy">
+    <rdfs:label>suggests remedy</rdfs:label>
+    <rdfs:domain rdf:resource="#RiskFlag"/>
+    <rdfs:range rdf:resource="#Remedy"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#plannedFor">
+    <rdfs:label>planned for</rdfs:label>
+    <rdfs:domain rdf:resource="#ToolpathProgram"/>
+    <rdfs:range rdf:resource="#Robot"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasController">
+    <rdfs:label>has controller</rdfs:label>
+    <rdfs:domain rdf:resource="#Robot"/>
+    <rdfs:range rdf:resource="#Controller"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#usesTool">
+    <rdfs:label>uses tool</rdfs:label>
+    <rdfs:domain rdf:resource="#ToolpathProgram"/>
+    <rdfs:range rdf:resource="#Tool"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasPrintingContext">
+    <rdfs:label>has printing context</rdfs:label>
+    <rdfs:domain rdf:resource="#ToolpathProgram"/>
+    <rdfs:range rdf:resource="#HybridPrintingContext"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#ontoSubstrate">
+    <rdfs:label>onto substrate</rdfs:label>
+    <rdfs:domain rdf:resource="#HybridPrintingContext"/>
+    <rdfs:range rdf:resource="#Substrate"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#usesReorientationStrategy">
+    <rdfs:label>uses reorientation strategy</rdfs:label>
+    <rdfs:domain rdf:resource="#HybridPrintingContext"/>
+    <rdfs:range rdf:resource="#ReorientationStrategy"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasExecutionRecord">
+    <rdfs:label>has execution record</rdfs:label>
+    <rdfs:domain rdf:resource="#ToolpathProgram"/>
+    <rdfs:range rdf:resource="#ExecutionRecord"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasObservation">
+    <rdfs:label>has observation</rdfs:label>
+    <rdfs:domain rdf:resource="#ExecutionRecord"/>
+    <rdfs:range rdf:resource="#DeviationObservation"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#observedInRegion">
+    <rdfs:label>observed in region</rdfs:label>
+    <rdfs:domain rdf:resource="#DeviationObservation"/>
+    <rdfs:range rdf:resource="#Region"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="#hasProvenance">
+    <rdfs:label>has provenance</rdfs:label>
+    <rdfs:range rdf:resource="#Provenance"/>
+    <rdfs:comment>Attaches origin (twin-simulated or RSI-measured) to any quantitative node, typically KinematicProfile or DeviationObservation. Domain left open on purpose.</rdfs:comment>
+  </owl:ObjectProperty>
+
+  <!-- ================================================================
+       DATATYPE PROPERTIES
+       ================================================================ -->
+
+  <!-- Pose -->
+  <owl:DatatypeProperty rdf:about="#px">
+    <rdfs:domain rdf:resource="#Pose"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>x position (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#py">
+    <rdfs:domain rdf:resource="#Pose"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>y position (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#pz">
+    <rdfs:domain rdf:resource="#Pose"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>z position (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#eulerA">
+    <rdfs:domain rdf:resource="#Pose"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>KUKA A angle (deg)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#eulerB">
+    <rdfs:domain rdf:resource="#Pose"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>KUKA B angle (deg)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#eulerC">
+    <rdfs:domain rdf:resource="#Pose"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>KUKA C angle (deg)</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- MotionCommand -->
+  <owl:DatatypeProperty rdf:about="#commandedSpeedMmPerS">
+    <rdfs:domain rdf:resource="#MotionCommand"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>commanded TCP speed (mm/s)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#blockIndex">
+    <rdfs:domain rdf:resource="#MotionCommand"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:label>block index in program order</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#sourceLine">
+    <rdfs:domain rdf:resource="#MotionCommand"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:label>source line in the KRL file</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- BlendingSpecification -->
+  <owl:DatatypeProperty rdf:about="#blendDistanceMm">
+    <rdfs:domain rdf:resource="#BlendingSpecification"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>APO.CDIS blend distance (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#blendVelocityPct">
+    <rdfs:domain rdf:resource="#BlendingSpecification"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>APO.CVEL velocity criterion (percent)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#blendOrientationDeg">
+    <rdfs:domain rdf:resource="#BlendingSpecification"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>APO.CORI orientation criterion (deg)</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- DynamicsSpecification -->
+  <owl:DatatypeProperty rdf:about="#pathAccelerationPct">
+    <rdfs:domain rdf:resource="#DynamicsSpecification"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>programmed path acceleration (percent of maximum)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#pathJerkPct">
+    <rdfs:domain rdf:resource="#DynamicsSpecification"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>programmed path jerk (percent of maximum, spline blocks)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#lookAheadBlocks">
+    <rdfs:domain rdf:resource="#DynamicsSpecification"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:label>advance-run depth (blocks, KRL $ADVANCE)</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- Region -->
+  <owl:DatatypeProperty rdf:about="#startArcLengthMm">
+    <rdfs:domain rdf:resource="#Region"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>region start arc length (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#endArcLengthMm">
+    <rdfs:domain rdf:resource="#Region"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>region end arc length (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#cornerAngleDeg">
+    <rdfs:domain rdf:resource="#Region"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>direction change at a corner (deg)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#angularTwistRateDegPerMm">
+    <rdfs:domain rdf:resource="#Region"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>angular twist rate (deg per mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#minPlannedRadiusMm">
+    <rdfs:domain rdf:resource="#Region"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>minimum planned local contour radius (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- KinematicProfile (DT-provenanced) -->
+  <owl:DatatypeProperty rdf:about="#jacobianConditionNumberMax">
+    <rdfs:domain rdf:resource="#KinematicProfile"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>maximum Jacobian condition number over the region (DT)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#manipulabilityMin">
+    <rdfs:domain rdf:resource="#KinematicProfile"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>minimum manipulability over the region (DT)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#wristManipulabilityMin">
+    <rdfs:domain rdf:resource="#KinematicProfile"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>minimum wrist manipulability over the region (DT)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#minJointVelocityReserve">
+    <rdfs:domain rdf:resource="#KinematicProfile"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>minimum joint velocity reserve over the region, in [0,1] (DT)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#criticalJoint">
+    <rdfs:domain rdf:resource="#KinematicProfile"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:label>index of the joint attaining the minimum reserve</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- Tool -->
+  <owl:DatatypeProperty rdf:about="#nozzleDiameterMm">
+    <rdfs:domain rdf:resource="#Tool"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>nozzle diameter (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#minFeasibleRadiusMm">
+    <rdfs:domain rdf:resource="#Tool"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>minimum feasible contour radius for this tool (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- Substrate -->
+  <owl:DatatypeProperty rdf:about="#substrateDescription">
+    <rdfs:domain rdf:resource="#Substrate"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:label>substrate description</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- ExecutionRecord (knob vector of the run) -->
+  <owl:DatatypeProperty rdf:about="#runApoCdisMm">
+    <rdfs:domain rdf:resource="#ExecutionRecord"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>APO.CDIS in force during the run (mm)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#runPathAccelerationPct">
+    <rdfs:domain rdf:resource="#ExecutionRecord"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>path acceleration in force during the run (percent)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#runPathJerkPct">
+    <rdfs:domain rdf:resource="#ExecutionRecord"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>path jerk in force during the run (percent)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#runLookAheadBlocks">
+    <rdfs:domain rdf:resource="#ExecutionRecord"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:label>advance-run depth in force during the run (blocks)</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- DeviationObservation (RSI-provenanced) -->
+  <owl:DatatypeProperty rdf:about="#lateralDeviationRmsMm">
+    <rdfs:domain rdf:resource="#DeviationObservation"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>M1 lateral deviation RMS (mm, RSI)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#lateralDeviationMaxMm">
+    <rdfs:domain rdf:resource="#DeviationObservation"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>M1 lateral deviation max (mm, RSI)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#orientationDeviationMaxDeg">
+    <rdfs:domain rdf:resource="#DeviationObservation"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>M2 orientation deviation max (deg, RSI)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#speedDipPct">
+    <rdfs:domain rdf:resource="#DeviationObservation"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>M3 speed dip depth (percent of commanded, RSI)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#speedDipDurationMs">
+    <rdfs:domain rdf:resource="#DeviationObservation"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>M3 speed dip duration (ms, RSI)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#exitRingingRmsMm">
+    <rdfs:domain rdf:resource="#DeviationObservation"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>M4 exit ringing RMS (mm, RSI)</rdfs:label>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#samplingRateHz">
+    <rdfs:domain rdf:resource="#DeviationObservation"/><rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:label>telemetry sampling rate (Hz)</rdfs:label>
+  </owl:DatatypeProperty>
+
+  <!-- ================================================================
+       NAMED INDIVIDUALS
+       ================================================================ -->
+
+  <!-- Provenance -->
+  <owl:NamedIndividual rdf:about="#DigitalTwinSimulated">
+    <rdf:type rdf:resource="#Provenance"/>
+    <rdfs:label>digital-twin simulated</rdfs:label>
+    <rdfs:comment>Quantity computed by the kinematic digital twin along the planned path. Never a measurement.</rdfs:comment>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#RsiMeasured">
+    <rdf:type rdf:resource="#Provenance"/>
+    <rdfs:label>RSI measured</rdfs:label>
+    <rdfs:comment>Quantity measured from high-rate controller telemetry during a physical run.</rdfs:comment>
+  </owl:NamedIndividual>
+
+  <!-- RiskType vocabulary -->
+  <owl:NamedIndividual rdf:about="#BlendingDistortion">
+    <rdf:type rdf:resource="#RiskType"/>
+    <rdfs:label>blending distortion</rdfs:label>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#WristJointLoading">
+    <rdf:type rdf:resource="#RiskType"/>
+    <rdfs:label>wrist-joint loading</rdfs:label>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#KinematicVelocityLimitation">
+    <rdf:type rdf:resource="#RiskType"/>
+    <rdfs:label>kinematic velocity limitation</rdfs:label>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#SingularityProximity">
+    <rdf:type rdf:resource="#RiskType"/>
+    <rdfs:label>singularity proximity</rdfs:label>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#GeometricInfeasibility">
+    <rdf:type rdf:resource="#RiskType"/>
+    <rdfs:label>geometric infeasibility</rdfs:label>
+    <rdfs:comment>The planned feature is unachievable with the mounted tool regardless of controller settings, for example a contour radius below the nozzle-dependent minimum.</rdfs:comment>
+  </owl:NamedIndividual>
+
+  <!-- Remedy capability classes -->
+  <owl:NamedIndividual rdf:about="#VelocityReduction">
+    <rdf:type rdf:resource="#Remedy"/>
+    <rdfs:label>velocity reduction</rdfs:label>
+    <rdfs:comment>Lower the commanded TCP speed locally. Satisfiable by every controller.</rdfs:comment>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#JerkRelaxation">
+    <rdf:type rdf:resource="#Remedy"/>
+    <rdfs:label>jerk relaxation</rdfs:label>
+    <rdfs:comment>Relax the path jerk limit where the interpolator exposes it.</rdfs:comment>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#LookAheadExtension">
+    <rdf:type rdf:resource="#Remedy"/>
+    <rdfs:label>look-ahead extension</rdfs:label>
+    <rdfs:comment>Increase the interpolator's advance-run or look-ahead depth.</rdfs:comment>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#BlendRadiusAdjustment">
+    <rdf:type rdf:resource="#Remedy"/>
+    <rdfs:label>blend radius adjustment</rdfs:label>
+    <rdfs:comment>Adjust the approximate-positioning tolerance at the affected junction.</rdfs:comment>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#DesignFilleting">
+    <rdf:type rdf:resource="#Remedy"/>
+    <rdfs:label>filleting in design</rdfs:label>
+    <rdfs:comment>Remove the sharp feature upstream, in CAD or slicing, before any controller sees it.</rdfs:comment>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#ReorientationRedistribution">
+    <rdf:type rdf:resource="#Remedy"/>
+    <rdfs:label>reorientation redistribution</rdfs:label>
+    <rdfs:comment>Spread a concentrated orientation change over a longer translational span in planning.</rdfs:comment>
+  </owl:NamedIndividual>
+
+  <!-- ReorientationStrategy vocabulary -->
+  <owl:NamedIndividual rdf:about="#ContinuousTilt">
+    <rdf:type rdf:resource="#ReorientationStrategy"/>
+    <rdfs:label>continuous tilt</rdfs:label>
+  </owl:NamedIndividual>
+  <owl:NamedIndividual rdf:about="#DiscreteReorientation">
+    <rdf:type rdf:resource="#ReorientationStrategy"/>
+    <rdfs:label>discrete reorientation</rdfs:label>
+  </owl:NamedIndividual>
+
+</rdf:RDF>

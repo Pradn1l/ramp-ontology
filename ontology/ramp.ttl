@@ -1,0 +1,511 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix ramp: <https://w3id.org/ramp#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://w3id.org/ramp> a owl:Ontology ;
+    dcterms:creator "Pradnil Kamble" ;
+    dcterms:description "A minimal OWL ontology for representing planned 6-DOF robotic AM toolpaths as semantically enriched objects. It covers the plan spine (program, motion commands, poses, blending and dynamics parameters), a semantic overlay (regions, kinematic profiles, risk flags, remedies stated as capability classes), printing context (robot, controller, tool, substrate, hybrid context), and a validation group (execution records and measured deviation observations). The ontology organizes, queries, and makes portable the physics of trajectory fidelity. It does not compute kinematics. Every quantitative assertion is expected to carry a provenance link distinguishing digital-twin-simulated from RSI-measured origin." ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dcterms:title "RAMP: Robotic Additive Manufacturing Planned-toolpath ontology" ;
+    rdfs:seeAlso sosa: ;
+    owl:versionInfo "0.1.0" ;
+    skos:note "Alignment stance: reuse by reference, not by import. DeviationObservation is observation-like in the SOSA sense. Robot is intended to be compatible with the CORA notion of robot in IEEE 1872-2015. QUDT unit IRIs may be attached to datatype properties in future versions. Units in this version are fixed by property naming (mm, deg, Hz, percent)." .
+
+ramp:BlendRadiusAdjustment a owl:NamedIndividual,
+        ramp:Remedy ;
+    rdfs:label "blend radius adjustment" ;
+    rdfs:comment "Adjust the approximate-positioning tolerance at the affected junction." .
+
+ramp:BlendZone a owl:Class ;
+    rdfs:label "Blend zone" ;
+    rdfs:comment "The designed approximation interval implied by a command's approximate-positioning switch and the active APO values. Deviation inside this zone up to the commanded tolerance is designed, not infidelity." ;
+    rdfs:subClassOf ramp:Region .
+
+ramp:BlendingDistortion a owl:NamedIndividual,
+        ramp:RiskType ;
+    rdfs:label "blending distortion" .
+
+ramp:ContinuousTilt a owl:NamedIndividual,
+        ramp:ReorientationStrategy ;
+    rdfs:label "continuous tilt" .
+
+ramp:CornerRegion a owl:Class ;
+    rdfs:label "Corner region" ;
+    rdfs:comment "A junction where the translational direction changes sharply with low orientation change. The known, controller-handled case." ;
+    rdfs:subClassOf ramp:Region .
+
+ramp:DesignFilleting a owl:NamedIndividual,
+        ramp:Remedy ;
+    rdfs:label "filleting in design" ;
+    rdfs:comment "Remove the sharp feature upstream, in CAD or slicing, before any controller sees it." .
+
+ramp:DigitalTwinSimulated a owl:NamedIndividual,
+        ramp:Provenance ;
+    rdfs:label "digital-twin simulated" ;
+    rdfs:comment "Quantity computed by the kinematic digital twin along the planned path. Never a measurement." .
+
+ramp:DiscreteReorientation a owl:NamedIndividual,
+        ramp:ReorientationStrategy ;
+    rdfs:label "discrete reorientation" .
+
+ramp:GeometricInfeasibility a owl:NamedIndividual,
+        ramp:RiskType ;
+    rdfs:label "geometric infeasibility" ;
+    rdfs:comment "The planned feature is unachievable with the mounted tool regardless of controller settings, for example a contour radius below the nozzle-dependent minimum." .
+
+ramp:JerkRelaxation a owl:NamedIndividual,
+        ramp:Remedy ;
+    rdfs:label "jerk relaxation" ;
+    rdfs:comment "Relax the path jerk limit where the interpolator exposes it." .
+
+ramp:JointMotion a owl:Class ;
+    rdfs:label "Joint motion" ;
+    rdfs:comment "Joint-interpolated motion. In KRL, a PTP block. Used for approach and retract, not for deposition." ;
+    rdfs:subClassOf ramp:MotionCommand .
+
+ramp:KinematicVelocityLimitation a owl:NamedIndividual,
+        ramp:RiskType ;
+    rdfs:label "kinematic velocity limitation" .
+
+ramp:LinearMotion a owl:Class ;
+    rdfs:label "Linear motion" ;
+    rdfs:comment "Cartesian linear motion. In KRL, a LIN block." ;
+    rdfs:subClassOf ramp:MotionCommand .
+
+ramp:LookAheadExtension a owl:NamedIndividual,
+        ramp:Remedy ;
+    rdfs:label "look-ahead extension" ;
+    rdfs:comment "Increase the interpolator's advance-run or look-ahead depth." .
+
+ramp:NearSingularityRegion a owl:Class ;
+    rdfs:label "Near-singularity region" ;
+    rdfs:comment "An interval where the digital twin reports proximity to a kinematic singularity, for example a small wrist angle or a high Jacobian condition number." ;
+    rdfs:subClassOf ramp:Region .
+
+ramp:ReorientationRedistribution a owl:NamedIndividual,
+        ramp:Remedy ;
+    rdfs:label "reorientation redistribution" ;
+    rdfs:comment "Spread a concentrated orientation change over a longer translational span in planning." .
+
+ramp:RsiMeasured a owl:NamedIndividual,
+        ramp:Provenance ;
+    rdfs:label "RSI measured" ;
+    rdfs:comment "Quantity measured from high-rate controller telemetry during a physical run." .
+
+ramp:SharpReorientationRegion a owl:Class ;
+    rdfs:label "Sharp reorientation region" ;
+    rdfs:comment "An interval with large angular change over small translation, that is, high angular twist rate. The AM-specific deviation source emphasized by this ontology." ;
+    rdfs:subClassOf ramp:Region .
+
+ramp:SingularityProximity a owl:NamedIndividual,
+        ramp:RiskType ;
+    rdfs:label "singularity proximity" .
+
+ramp:SplineLinearMotion a owl:Class ;
+    rdfs:label "Spline linear motion" ;
+    rdfs:comment "Cartesian linear segment inside a spline context. In KRL, an SLIN block. Jerk limits are settable for spline motion." ;
+    rdfs:subClassOf ramp:MotionCommand .
+
+ramp:SubNozzleFeatureRegion a owl:Class ;
+    rdfs:label "Sub-nozzle feature region" ;
+    rdfs:comment "An interval whose planned local contour radius falls below the minimum feasible radius for the mounted nozzle. Unachievable regardless of controller settings." ;
+    rdfs:subClassOf ramp:Region .
+
+ramp:VelocityLimitedRegion a owl:Class ;
+    rdfs:label "Velocity-limited region" ;
+    rdfs:comment "An interval where executing the plan at the commanded TCP speed demands joint rates near their limits, that is, a low minimum joint velocity reserve." ;
+    rdfs:subClassOf ramp:Region .
+
+ramp:VelocityReduction a owl:NamedIndividual,
+        ramp:Remedy ;
+    rdfs:label "velocity reduction" ;
+    rdfs:comment "Lower the commanded TCP speed locally. Satisfiable by every controller." .
+
+ramp:WristJointLoading a owl:NamedIndividual,
+        ramp:RiskType ;
+    rdfs:label "wrist-joint loading" .
+
+ramp:angularTwistRateDegPerMm a owl:DatatypeProperty ;
+    rdfs:label "angular twist rate (deg per mm)" ;
+    rdfs:domain ramp:Region ;
+    rdfs:range xsd:double .
+
+ramp:blendDistanceMm a owl:DatatypeProperty ;
+    rdfs:label "APO.CDIS blend distance (mm)" ;
+    rdfs:domain ramp:BlendingSpecification ;
+    rdfs:range xsd:double .
+
+ramp:blendOrientationDeg a owl:DatatypeProperty ;
+    rdfs:label "APO.CORI orientation criterion (deg)" ;
+    rdfs:domain ramp:BlendingSpecification ;
+    rdfs:range xsd:double .
+
+ramp:blendVelocityPct a owl:DatatypeProperty ;
+    rdfs:label "APO.CVEL velocity criterion (percent)" ;
+    rdfs:domain ramp:BlendingSpecification ;
+    rdfs:range xsd:double .
+
+ramp:blockIndex a owl:DatatypeProperty ;
+    rdfs:label "block index in program order" ;
+    rdfs:domain ramp:MotionCommand ;
+    rdfs:range xsd:integer .
+
+ramp:commandedSpeedMmPerS a owl:DatatypeProperty ;
+    rdfs:label "commanded TCP speed (mm/s)" ;
+    rdfs:domain ramp:MotionCommand ;
+    rdfs:range xsd:double .
+
+ramp:cornerAngleDeg a owl:DatatypeProperty ;
+    rdfs:label "direction change at a corner (deg)" ;
+    rdfs:domain ramp:Region ;
+    rdfs:range xsd:double .
+
+ramp:criticalJoint a owl:DatatypeProperty ;
+    rdfs:label "index of the joint attaining the minimum reserve" ;
+    rdfs:domain ramp:KinematicProfile ;
+    rdfs:range xsd:integer .
+
+ramp:endArcLengthMm a owl:DatatypeProperty ;
+    rdfs:label "region end arc length (mm)" ;
+    rdfs:domain ramp:Region ;
+    rdfs:range xsd:double .
+
+ramp:eulerA a owl:DatatypeProperty ;
+    rdfs:label "KUKA A angle (deg)" ;
+    rdfs:domain ramp:Pose ;
+    rdfs:range xsd:double .
+
+ramp:eulerB a owl:DatatypeProperty ;
+    rdfs:label "KUKA B angle (deg)" ;
+    rdfs:domain ramp:Pose ;
+    rdfs:range xsd:double .
+
+ramp:eulerC a owl:DatatypeProperty ;
+    rdfs:label "KUKA C angle (deg)" ;
+    rdfs:domain ramp:Pose ;
+    rdfs:range xsd:double .
+
+ramp:exitRingingRmsMm a owl:DatatypeProperty ;
+    rdfs:label "M4 exit ringing RMS (mm, RSI)" ;
+    rdfs:domain ramp:DeviationObservation ;
+    rdfs:range xsd:double .
+
+ramp:hasBlending a owl:ObjectProperty ;
+    rdfs:label "has blending" ;
+    rdfs:domain ramp:MotionCommand ;
+    rdfs:range ramp:BlendingSpecification .
+
+ramp:hasCommand a owl:ObjectProperty ;
+    rdfs:label "has command" ;
+    rdfs:comment "Links a program to a motion command it contains. Ordering is carried by blockIndex." ;
+    rdfs:domain ramp:ToolpathProgram ;
+    rdfs:range ramp:MotionCommand .
+
+ramp:hasController a owl:ObjectProperty ;
+    rdfs:label "has controller" ;
+    rdfs:domain ramp:Robot ;
+    rdfs:range ramp:Controller .
+
+ramp:hasDynamics a owl:ObjectProperty ;
+    rdfs:label "has dynamics" ;
+    rdfs:comment "Links a program or a command to the dynamics specification in force. Domain left open on purpose." ;
+    rdfs:range ramp:DynamicsSpecification .
+
+ramp:hasExecutionRecord a owl:ObjectProperty ;
+    rdfs:label "has execution record" ;
+    rdfs:domain ramp:ToolpathProgram ;
+    rdfs:range ramp:ExecutionRecord .
+
+ramp:hasKinematicProfile a owl:ObjectProperty ;
+    rdfs:label "has kinematic profile" ;
+    rdfs:domain ramp:Region ;
+    rdfs:range ramp:KinematicProfile .
+
+ramp:hasObservation a owl:ObjectProperty ;
+    rdfs:label "has observation" ;
+    rdfs:domain ramp:ExecutionRecord ;
+    rdfs:range ramp:DeviationObservation .
+
+ramp:hasPrintingContext a owl:ObjectProperty ;
+    rdfs:label "has printing context" ;
+    rdfs:domain ramp:ToolpathProgram ;
+    rdfs:range ramp:HybridPrintingContext .
+
+ramp:hasProvenance a owl:ObjectProperty ;
+    rdfs:label "has provenance" ;
+    rdfs:comment "Attaches origin (twin-simulated or RSI-measured) to any quantitative node, typically KinematicProfile or DeviationObservation. Domain left open on purpose." ;
+    rdfs:range ramp:Provenance .
+
+ramp:hasRegion a owl:ObjectProperty ;
+    rdfs:label "has region" ;
+    rdfs:domain ramp:ToolpathProgram ;
+    rdfs:range ramp:Region .
+
+ramp:hasRiskFlag a owl:ObjectProperty ;
+    rdfs:label "has risk flag" ;
+    rdfs:domain ramp:Region ;
+    rdfs:range ramp:RiskFlag .
+
+ramp:hasRiskType a owl:ObjectProperty ;
+    rdfs:label "has risk type" ;
+    rdfs:domain ramp:RiskFlag ;
+    rdfs:range ramp:RiskType .
+
+ramp:hasTargetPose a owl:ObjectProperty ;
+    rdfs:label "has target pose" ;
+    rdfs:domain ramp:MotionCommand ;
+    rdfs:range ramp:Pose .
+
+ramp:jacobianConditionNumberMax a owl:DatatypeProperty ;
+    rdfs:label "maximum Jacobian condition number over the region (DT)" ;
+    rdfs:domain ramp:KinematicProfile ;
+    rdfs:range xsd:double .
+
+ramp:lateralDeviationMaxMm a owl:DatatypeProperty ;
+    rdfs:label "M1 lateral deviation max (mm, RSI)" ;
+    rdfs:domain ramp:DeviationObservation ;
+    rdfs:range xsd:double .
+
+ramp:lateralDeviationRmsMm a owl:DatatypeProperty ;
+    rdfs:label "M1 lateral deviation RMS (mm, RSI)" ;
+    rdfs:domain ramp:DeviationObservation ;
+    rdfs:range xsd:double .
+
+ramp:lookAheadBlocks a owl:DatatypeProperty ;
+    rdfs:label "advance-run depth (blocks, KRL $ADVANCE)" ;
+    rdfs:domain ramp:DynamicsSpecification ;
+    rdfs:range xsd:integer .
+
+ramp:manipulabilityMin a owl:DatatypeProperty ;
+    rdfs:label "minimum manipulability over the region (DT)" ;
+    rdfs:domain ramp:KinematicProfile ;
+    rdfs:range xsd:double .
+
+ramp:minFeasibleRadiusMm a owl:DatatypeProperty ;
+    rdfs:label "minimum feasible contour radius for this tool (mm)" ;
+    rdfs:domain ramp:Tool ;
+    rdfs:range xsd:double .
+
+ramp:minJointVelocityReserve a owl:DatatypeProperty ;
+    rdfs:label "minimum joint velocity reserve over the region, in [0,1] (DT)" ;
+    rdfs:domain ramp:KinematicProfile ;
+    rdfs:range xsd:double .
+
+ramp:minPlannedRadiusMm a owl:DatatypeProperty ;
+    rdfs:label "minimum planned local contour radius (mm)" ;
+    rdfs:domain ramp:Region ;
+    rdfs:range xsd:double .
+
+ramp:nextCommand a owl:ObjectProperty ;
+    rdfs:label "next command" ;
+    rdfs:comment "Successor relation between consecutive commands of one program." ;
+    rdfs:domain ramp:MotionCommand ;
+    rdfs:range ramp:MotionCommand .
+
+ramp:nozzleDiameterMm a owl:DatatypeProperty ;
+    rdfs:label "nozzle diameter (mm)" ;
+    rdfs:domain ramp:Tool ;
+    rdfs:range xsd:double .
+
+ramp:observedInRegion a owl:ObjectProperty ;
+    rdfs:label "observed in region" ;
+    rdfs:domain ramp:DeviationObservation ;
+    rdfs:range ramp:Region .
+
+ramp:ontoSubstrate a owl:ObjectProperty ;
+    rdfs:label "onto substrate" ;
+    rdfs:domain ramp:HybridPrintingContext ;
+    rdfs:range ramp:Substrate .
+
+ramp:orientationDeviationMaxDeg a owl:DatatypeProperty ;
+    rdfs:label "M2 orientation deviation max (deg, RSI)" ;
+    rdfs:domain ramp:DeviationObservation ;
+    rdfs:range xsd:double .
+
+ramp:pathAccelerationPct a owl:DatatypeProperty ;
+    rdfs:label "programmed path acceleration (percent of maximum)" ;
+    rdfs:domain ramp:DynamicsSpecification ;
+    rdfs:range xsd:double .
+
+ramp:pathJerkPct a owl:DatatypeProperty ;
+    rdfs:label "programmed path jerk (percent of maximum, spline blocks)" ;
+    rdfs:domain ramp:DynamicsSpecification ;
+    rdfs:range xsd:double .
+
+ramp:plannedFor a owl:ObjectProperty ;
+    rdfs:label "planned for" ;
+    rdfs:domain ramp:ToolpathProgram ;
+    rdfs:range ramp:Robot .
+
+ramp:px a owl:DatatypeProperty ;
+    rdfs:label "x position (mm)" ;
+    rdfs:domain ramp:Pose ;
+    rdfs:range xsd:double .
+
+ramp:py a owl:DatatypeProperty ;
+    rdfs:label "y position (mm)" ;
+    rdfs:domain ramp:Pose ;
+    rdfs:range xsd:double .
+
+ramp:pz a owl:DatatypeProperty ;
+    rdfs:label "z position (mm)" ;
+    rdfs:domain ramp:Pose ;
+    rdfs:range xsd:double .
+
+ramp:runApoCdisMm a owl:DatatypeProperty ;
+    rdfs:label "APO.CDIS in force during the run (mm)" ;
+    rdfs:domain ramp:ExecutionRecord ;
+    rdfs:range xsd:double .
+
+ramp:runLookAheadBlocks a owl:DatatypeProperty ;
+    rdfs:label "advance-run depth in force during the run (blocks)" ;
+    rdfs:domain ramp:ExecutionRecord ;
+    rdfs:range xsd:integer .
+
+ramp:runPathAccelerationPct a owl:DatatypeProperty ;
+    rdfs:label "path acceleration in force during the run (percent)" ;
+    rdfs:domain ramp:ExecutionRecord ;
+    rdfs:range xsd:double .
+
+ramp:runPathJerkPct a owl:DatatypeProperty ;
+    rdfs:label "path jerk in force during the run (percent)" ;
+    rdfs:domain ramp:ExecutionRecord ;
+    rdfs:range xsd:double .
+
+ramp:samplingRateHz a owl:DatatypeProperty ;
+    rdfs:label "telemetry sampling rate (Hz)" ;
+    rdfs:domain ramp:DeviationObservation ;
+    rdfs:range xsd:double .
+
+ramp:sourceLine a owl:DatatypeProperty ;
+    rdfs:label "source line in the KRL file" ;
+    rdfs:domain ramp:MotionCommand ;
+    rdfs:range xsd:integer .
+
+ramp:spansCommand a owl:ObjectProperty ;
+    rdfs:label "spans command" ;
+    rdfs:comment "Links a region to each motion command it overlaps in arc length." ;
+    rdfs:domain ramp:Region ;
+    rdfs:range ramp:MotionCommand .
+
+ramp:speedDipDurationMs a owl:DatatypeProperty ;
+    rdfs:label "M3 speed dip duration (ms, RSI)" ;
+    rdfs:domain ramp:DeviationObservation ;
+    rdfs:range xsd:double .
+
+ramp:speedDipPct a owl:DatatypeProperty ;
+    rdfs:label "M3 speed dip depth (percent of commanded, RSI)" ;
+    rdfs:domain ramp:DeviationObservation ;
+    rdfs:range xsd:double .
+
+ramp:startArcLengthMm a owl:DatatypeProperty ;
+    rdfs:label "region start arc length (mm)" ;
+    rdfs:domain ramp:Region ;
+    rdfs:range xsd:double .
+
+ramp:substrateDescription a owl:DatatypeProperty ;
+    rdfs:label "substrate description" ;
+    rdfs:domain ramp:Substrate ;
+    rdfs:range xsd:string .
+
+ramp:suggestsRemedy a owl:ObjectProperty ;
+    rdfs:label "suggests remedy" ;
+    rdfs:domain ramp:RiskFlag ;
+    rdfs:range ramp:Remedy .
+
+ramp:usesReorientationStrategy a owl:ObjectProperty ;
+    rdfs:label "uses reorientation strategy" ;
+    rdfs:domain ramp:HybridPrintingContext ;
+    rdfs:range ramp:ReorientationStrategy .
+
+ramp:usesTool a owl:ObjectProperty ;
+    rdfs:label "uses tool" ;
+    rdfs:domain ramp:ToolpathProgram ;
+    rdfs:range ramp:Tool .
+
+ramp:wristManipulabilityMin a owl:DatatypeProperty ;
+    rdfs:label "minimum wrist manipulability over the region (DT)" ;
+    rdfs:domain ramp:KinematicProfile ;
+    rdfs:range xsd:double .
+
+ramp:Controller a owl:Class ;
+    rdfs:label "Controller" ;
+    rdfs:comment "The motion controller synthesizing the reference trajectory (element b of the decomposition). Its interpolator is treated as opaque." .
+
+ramp:Robot a owl:Class ;
+    rdfs:label "Robot" ;
+    rdfs:comment "A serial manipulator executing the program. Intended to be compatible with the CORA notion of robot (IEEE 1872-2015)." .
+
+ramp:Substrate a owl:Class ;
+    rdfs:label "Substrate" ;
+    rdfs:comment "The existing part or plate printed onto in hybrid workflows." .
+
+ramp:HybridPrintingContext a owl:Class ;
+    rdfs:label "Hybrid printing context" ;
+    rdfs:comment "The hybrid-printing situation of a program, linking substrate and reorientation strategy." .
+
+ramp:Provenance a owl:Class ;
+    rdfs:label "Provenance" ;
+    rdfs:comment "The origin of a quantitative assertion. Two individuals are provided: DigitalTwinSimulated and RsiMeasured. The two must never be mixed within one metric." .
+
+ramp:ReorientationStrategy a owl:Class ;
+    rdfs:label "Reorientation strategy" ;
+    rdfs:comment "How the planner distributes tool reorientation, for example continuous tilt versus discrete reorientation moves. Instantiated by named individuals." .
+
+ramp:RiskFlag a owl:Class ;
+    rdfs:label "Risk flag" ;
+    rdfs:comment "An a priori flag attached to a region, naming a risk type and suggesting one or more remedies stated as capability classes." .
+
+ramp:Tool a owl:Class ;
+    rdfs:label "Tool" ;
+    rdfs:comment "The deposition end effector, characterized here by its nozzle diameter and the derived minimum feasible contour radius." .
+
+ramp:BlendingSpecification a owl:Class ;
+    rdfs:label "Blending specification" ;
+    rdfs:comment "Approximate-positioning parameters governing the designed a-to-b gap, such as KRL $APO.CDIS, $APO.CVEL, and $APO.CORI. Stored as machine values on the plan spine. The capability-level counterpart lives in Remedy." .
+
+ramp:DynamicsSpecification a owl:Class ;
+    rdfs:label "Dynamics specification" ;
+    rdfs:comment "Programmed path acceleration and jerk limits and the advance-run (look-ahead) depth active for a command or program." .
+
+ramp:ExecutionRecord a owl:Class ;
+    rdfs:label "Execution record" ;
+    rdfs:comment "One physical run of a program, storing the controller knob vector in force (APO distance, path acceleration, path jerk, advance-run depth) and linking to measured observations." .
+
+ramp:KinematicProfile a owl:Class ;
+    rdfs:label "Kinematic profile" ;
+    rdfs:comment "Aggregated digital-twin kinematic descriptors over a region: Jacobian conditioning, manipulability, wrist manipulability, and joint velocity reserves. Always DT-provenanced." .
+
+ramp:RiskType a owl:Class ;
+    rdfs:label "Risk type" ;
+    rdfs:comment "The controlled vocabulary of design-stage risks. Instantiated by named individuals." .
+
+ramp:ToolpathProgram a owl:Class ;
+    rdfs:label "Toolpath program" ;
+    rdfs:comment "A planned deposition program, typically one KRL source file, composed of ordered motion commands and linked to its printing context." .
+
+ramp:Pose a owl:Class ;
+    rdfs:label "Pose" ;
+    rdfs:comment "An SE(3) target pose given by position in mm and KUKA A/B/C Euler angles in degrees, in a stated base frame." .
+
+ramp:Remedy a owl:Class ;
+    rdfs:label "Remedy" ;
+    rdfs:comment "A machine-independent capability class describing how a risk can be mitigated. Bindings to concrete controller parameters are resolved per deployment and are not part of this ontology." .
+
+ramp:DeviationObservation a owl:Class ;
+    rdfs:label "Deviation observation" ;
+    rdfs:comment "Per-region aggregates of measured deviation metrics from RSI telemetry: lateral deviation RMS and max, orientation deviation max, speed dip, exit ringing. Always RSI-provenanced. Observation-like in the SOSA sense." ;
+    rdfs:seeAlso sosa:Observation .
+
+ramp:MotionCommand a owl:Class ;
+    rdfs:label "Motion command" ;
+    rdfs:comment "A controller-level motion primitive with a target pose, a commanded speed, and optional blending and dynamics specifications." .
+
+ramp:Region a owl:Class ;
+    rdfs:label "Region" ;
+    rdfs:comment "A contiguous arc-length interval of the planned path carrying a semantic tag. Region subclasses are intentionally not disjoint. A sharp reorientation may also be near-singular, and the overlap is informative." .
+

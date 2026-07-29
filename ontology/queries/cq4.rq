@@ -1,0 +1,12 @@
+# RAMP competency question -- released query.
+# Threshold literals are the released Theta (ontology/thresholds.json);
+# run against a graph populated per population/kg_population.py.
+PREFIX ramp: <https://w3id.org/ramp#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT DISTINCT ?program WHERE {
+  ?program ramp:hasPrintingContext ?ctx ;
+           ramp:hasRegion ?region .
+  ?ctx ramp:usesReorientationStrategy ramp:ContinuousTilt .
+  ?region a ramp:NearSingularityRegion .
+}

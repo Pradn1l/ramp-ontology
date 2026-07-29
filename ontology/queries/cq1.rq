@@ -1,0 +1,16 @@
+# RAMP competency question -- released query.
+# Threshold literals are the released Theta (ontology/thresholds.json);
+# run against a graph populated per population/kg_population.py.
+PREFIX ramp: <https://w3id.org/ramp#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?region ?program ?twist ?wristManip WHERE {
+  ?program ramp:hasRegion ?region .
+  ?region a ramp:SharpReorientationRegion ;
+          ramp:angularTwistRateDegPerMm ?twist ;
+          ramp:hasKinematicProfile ?kp .
+  ?kp ramp:wristManipulabilityMin ?wristManip .
+  FILTER(?twist > 0.75)
+  FILTER(?wristManip < 2.4496)
+}
+ORDER BY DESC(?twist)

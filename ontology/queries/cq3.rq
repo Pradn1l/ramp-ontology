@@ -1,0 +1,14 @@
+# RAMP competency question -- released query.
+# Threshold literals are the released Theta (ontology/thresholds.json);
+# run against a graph populated per population/kg_population.py.
+PREFIX ramp: <https://w3id.org/ramp#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?region ?riskType ?obs ?lateralRms ?speedDip WHERE {
+  ?region ramp:hasRiskFlag ?flag .
+  ?flag ramp:hasRiskType ?riskType .
+  ?obs ramp:observedInRegion ?region ;
+       ramp:lateralDeviationRmsMm ?lateralRms ;
+       ramp:speedDipPct ?speedDip .
+}
+ORDER BY ?region
