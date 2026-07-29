@@ -1,0 +1,14 @@
+KUKA KR 30 HA  - Nominal Modified DH Parameters
+
+Source: RoboDK Export Robot Kinematics
+Model: Denavit-Hartenberg Modified (DHM)
+Kinematics: Nominal
+
+CSV:
+Joint,alpha_deg,a_mm,theta_deg,d_mm
+1,0.000,0.000,0.000,815.000
+2,-90.000,350.000,0.000,0.000
+3,0.000,850.000,-90.000,0.000
+4,-90.000,145.000,0.000,820.000
+5,90.000,0.000,0.000,0.000
+6,-90.000,0.000,180.000,170.000

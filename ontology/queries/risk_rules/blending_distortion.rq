@@ -1,0 +1,15 @@
+# RAMP a-priori risk rule (Table 1) -- retrieval query.
+# Returns every region carrying this RiskType flag and its suggested
+# remedies. The thresholded DETECTION logic that assigns the flags
+# lives in population/risk_rules.py; this query reads the result off
+# the populated graph.
+PREFIX ramp: <https://w3id.org/ramp#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?program ?region ?remedy WHERE {
+  ?program ramp:hasRegion ?region .
+  ?region ramp:hasRiskFlag ?flag .
+  ?flag ramp:hasRiskType ramp:BlendingDistortion .
+  OPTIONAL { ?flag ramp:suggestsRemedy ?remedy . }
+}
+ORDER BY ?program ?region

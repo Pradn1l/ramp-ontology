@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use this software or ontology, please cite the accompanying paper (see preferred-citation) and, optionally, this repository."
+title: "RAMP: Robotic Additive Manufacturing Planned-toolpath ontology and population pipeline"
+abstract: >-
+  A minimal OWL ontology and deterministic population pipeline that represent
+  planned 6-DOF robotic additive-manufacturing toolpaths as a semantically
+  enriched knowledge graph, enabling a-priori (design-stage) identification of
+  trajectory-fidelity risks via SPARQL competency questions, with an RSI-telemetry
+  corroboration lane.
+type: software
+version: 0.1.0
+date-released: 2026-07-29
+license: Apache-2.0
+# TODO: replace <your-username> with your GitHub handle before publishing.
+repository-code: "https://github.com/<your-username>/ramp-ontology"
+url: "https://w3id.org/ramp"
+keywords:
+  - knowledge graph
+  - OWL ontology
+  - robotic additive manufacturing
+  - toolpath
+  - trajectory fidelity
+  - SPARQL
+  - digital twin
+  - KUKA
+authors:
+  - family-names: Kamble
+    given-names: Pradnil
+    email: pradnilkamble@gmail.com
+    affiliation: "DLR Institute of Vehicle Concepts"
+    # orcid: "https://orcid.org/0000-0000-0000-0000"  # TODO: add if available
+  - family-names: Unger
+    # given-names: ""        # TODO: add Unger's given name
+    affiliation: "DLR Institute of Vehicle Concepts"
+preferred-citation:
+  type: article
+  title: "Semantic Representation of Planned Toolpaths for 6-DOF Robotic Additive Manufacturing"
+  authors:
+    - family-names: Kamble
+      given-names: Pradnil
+      affiliation: "DLR Institute of Vehicle Concepts"
+    - family-names: Unger
+      affiliation: "DLR Institute of Vehicle Concepts"
+  year: 2026
+  # journal: ""    # TODO: fill on acceptance (e.g. an MDPI journal)
+  # doi: ""        # TODO: fill on publication

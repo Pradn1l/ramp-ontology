@@ -1,0 +1,12 @@
+# RAMP competency question -- released query.
+# Threshold literals are the released Theta (ontology/thresholds.json);
+# run against a graph populated per population/kg_population.py.
+PREFIX ramp: <https://w3id.org/ramp#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?program ?region ?minRadius WHERE {
+  ?program ramp:hasRegion ?region .
+  ?region a ramp:SubNozzleFeatureRegion ;
+          ramp:minPlannedRadiusMm ?minRadius .
+}
+ORDER BY ?minRadius
