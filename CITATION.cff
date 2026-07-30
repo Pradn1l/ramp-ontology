@@ -39,7 +39,7 @@ preferred-citation:
       given-names: Pradnil
       affiliation: "DLR Institute of Vehicle Concepts"
     - family-names: Unger
-		given-names: Nicolas
+	  given-names: Nicolas
       affiliation: "DLR Institute of Vehicle Concepts"
   year: 2026
   # journal: ""    # TODO: fill on acceptance
